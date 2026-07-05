@@ -66,6 +66,15 @@ ip.isPrivate('100.64.0.1')       // true  (CGNAT — original said public)
 | `address(name)` crashed with `TypeError` for unknown interface names → now returns `undefined` | — |
 | TypeScript types built in (no `@types/ip` needed), ESM named exports | — |
 
+## Migrating from ip
+
+```diff
+- const ip = require('ip');
++ const ip = require('@bybrave/ip2');
+```
+
+The API surface is the same; the behavioural differences are the security and correctness fixes — see the breaking changes below before upgrading.
+
 ## Breaking changes (v3)
 
 Version 3.0.0 because strictness is the fix — if you fed this library non-canonical strings, v2 was giving you wrong answers, not compatible ones:
