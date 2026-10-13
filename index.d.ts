@@ -2,6 +2,12 @@
 
 import { Buffer } from 'buffer';
 
+/**
+ * IPv4 subnets reserve the network and broadcast addresses. IPv6 subnets
+ * (an IPv6 address with an IPv6 mask) have none: `firstAddress` is the network
+ * address, `broadcastAddress` equals `lastAddress`, `numHosts` equals `length`,
+ * and counts above 2^53 are approximate.
+ */
 export interface SubnetInfo {
   networkAddress: string;
   firstAddress: string;

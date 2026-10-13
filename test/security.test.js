@@ -227,3 +227,74 @@ describe('address() direction fix', () => {
     assert.ok(ip.isPublic(addr) || addr === '127.0.0.1');
   });
 });
+
+describe('IPv6 subnets (#89, #110)', () => {
+  const subnet48 = ip.cidrSubnet('2001:db8:f53b::/48');
+
+  it('should compute the network and last address of an IPv6 subnet', () => {
+    assert.equal(subnet48.networkAddress, '2001:db8:f53b::');
+    assert.equal(subnet48.firstAddress, '2001:db8:f53b::');
+    assert.equal(subnet48.lastAddress, '2001:db8:f53b:ffff:ffff:ffff:ffff:ffff');
+    assert.equal(subnet48.broadcastAddress, subnet48.lastAddress);
+    assert.equal(subnet48.subnetMask, 'ffff:ffff:ffff::');
+    assert.equal(subnet48.subnetMaskLength, 48);
+  });
+
+  it('should not contain an address from a neighbouring prefix (#89)', () => {
+    assert.equal(subnet48.contains('2001:db8:f53a::1'), false);
+    assert.equal(ip.cidrSubnet('2001:db8:f53b::/128').contains('2001:db8:f53a::1'), false);
+  });
+
+  it('should contain addresses inside the prefix', () => {
+    assert.equal(subnet48.contains('2001:db8:f53b::1'), true);
+    assert.equal(subnet48.contains('2001:db8:f53b:ffff:ffff:ffff:ffff:ffff'), true);
+    assert.equal(subnet48.contains('2001:0db8:f53b:0000::0001'), true);
+  });
+
+  it('should reject an IPv6 CIDR with two :: groups (#110)', () => {
+    assert.throws(() => ip.cidrSubnet('efef::efef::/64'), /Invalid ip address/);
+  });
+
+  it('should return false for malformed addresses in contains()', () => {
+    assert.equal(subnet48.contains('2001:db8:f53b::1::'), false);
+    assert.equal(subnet48.contains('not-an-ip'), false);
+  });
+
+  it('should count addresses for /64, /127 and /128', () => {
+    assert.equal(ip.cidrSubnet('2001:db8::/64').length, 2 ** 64);
+    assert.equal(ip.cidrSubnet('2001:db8::/127').length, 2);
+    assert.equal(ip.cidrSubnet('2001:db8::/127').lastAddress, '2001:db8::1');
+    const single = ip.cidrSubnet('2001:db8::5/128');
+    assert.equal(single.numHosts, 1);
+    assert.equal(single.firstAddress, '2001:db8::5');
+    assert.equal(single.lastAddress, '2001:db8::5');
+  });
+
+  it('should treat ::/0 as containing every address', () => {
+    const all = ip.cidrSubnet('::/0');
+    assert.equal(all.contains('2001:db8::1'), true);
+    assert.equal(all.contains('1.2.3.4'), true);
+  });
+
+  it('should match IPv4 addresses only through the IPv4-mapped range', () => {
+    assert.equal(ip.cidrSubnet('::ffff:0:0/96').contains('10.1.2.3'), true);
+    assert.equal(ip.cidrSubnet('::ffff:10.0.0.0/104').contains('10.200.0.1'), true);
+    assert.equal(ip.cidrSubnet('::ffff:10.0.0.0/104').contains('11.0.0.1'), false);
+    assert.equal(subnet48.contains('10.1.2.3'), false);
+  });
+
+  it('should ignore the zone index of link-local addresses', () => {
+    assert.equal(ip.cidrSubnet('fe80::/10').contains('fe80::1%eth0'), true);
+  });
+
+  it('should reject a non-contiguous IPv6 mask', () => {
+    assert.throws(() => ip.subnet('2001:db8::1', 'ffff:0:ffff::'), /invalid subnet mask/);
+    assert.throws(() => ip.subnet('2001:db8::1', '::1'), /invalid subnet mask/);
+  });
+
+  it('should accept an IPv6 mask in subnet()', () => {
+    const s = ip.subnet('2001:db8::1', 'ffff:ffff::');
+    assert.equal(s.networkAddress, '2001:db8::');
+    assert.equal(s.subnetMaskLength, 32);
+  });
+});
