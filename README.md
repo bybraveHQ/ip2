@@ -64,6 +64,8 @@ ip.isPrivate('100.64.0.1')       // true  (CGNAT — original said public)
 | `loopback('ipv6')` returned `fe80::1`, which is link-local, not loopback → now `::1` | — |
 | `cidr()`/`cidrSubnet()` silently produced garbage for invalid prefix lengths (`/33`, `/x`) → now throw | — |
 | `address(name)` crashed with `TypeError` for unknown interface names → now returns `undefined` | — |
+| `cidrSubnet()`/`subnet()` gave wrong answers for IPv6 (`/48` contained a neighbouring `/48`) → real IPv6 subnet math | [#89](https://github.com/indutny/node-ip/issues/89), [#110](https://github.com/indutny/node-ip/issues/110) |
+| Bundling for the browser failed on `os` (webpack 5) → `browser` field maps it away | [#127](https://github.com/indutny/node-ip/issues/127), [#132](https://github.com/indutny/node-ip/issues/132) |
 | TypeScript types built in (no `@types/ip` needed), ESM named exports | — |
 
 ## Migrating from ip
@@ -120,6 +122,30 @@ s.broadcastAddress                    // '192.168.1.191'
 s.subnetMaskLength                    // 26
 s.numHosts                            // 62
 s.contains('::ffff:192.168.1.180')    // true (v4-mapped handled)
+
+const s6 = ip.cidrSubnet('2001:db8:f53b::/48')
+s6.lastAddress                        // '2001:db8:f53b:ffff:ffff:ffff:ffff:ffff'
+s6.contains('2001:db8:f53a::1')       // false
+s6.length                             // 2 ** 80 (approximate above 2 ** 53)
+```
+
+IPv6 subnets have no broadcast or reserved host addresses: `firstAddress` is the network address and `broadcastAddress` equals `lastAddress`. `ip.subnet(addr, mask)` uses IPv6 math when both the address and the mask are IPv6. Plain IPv4 addresses are matched by IPv6 subnets through the IPv4-mapped range (`::ffff:0:0/96`).
+
+### Invalid input throws
+
+`isPrivate`, `isPublic`, `isLoopback`, `toBuffer` and `toLong` throw on malformed input instead of returning a guess ([#146](https://github.com/indutny/node-ip/issues/146)). When the input is untrusted, check it first or catch:
+
+```js
+const isInternal = ip.isValid(host) && ip.isPrivate(host)
+```
+
+### Browsers and bundlers
+
+The library is Node-first. In a bundle, `os` is mapped away through the `browser` field, so `address()` is unavailable, and everything else works once `Buffer` is available. With webpack 5, add the polyfill ([#127](https://github.com/indutny/node-ip/issues/127), [#132](https://github.com/indutny/node-ip/issues/132)):
+
+```js
+// webpack.config.js, after `npm i buffer`
+resolve: { fallback: { buffer: require.resolve('buffer/') } }
 ```
 
 ## Ranges treated as private (not globally reachable)

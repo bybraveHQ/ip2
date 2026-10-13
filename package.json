@@ -1,6 +1,6 @@
 {
   "name": "@bybrave/ip2",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "Maintained fork of ip — IP address utilities with the unpatched SSRF advisory (CVE-2024-29415 / GHSA-2p57-rm9w-gvfp) fixed",
   "main": "lib/ip.js",
   "types": "index.d.ts",
@@ -57,5 +57,8 @@
   "devDependencies": {
     "@types/node": "^20.14.0",
     "typescript": "^5.5.0"
+  },
+  "browser": {
+    "os": false
   }
 }

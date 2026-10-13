@@ -2,6 +2,18 @@
 
 Maintained fork of [indutny/node-ip](https://github.com/indutny/node-ip). All notable changes to `@bybrave/ip2` are documented in this file.
 
+## 3.1.0 — 2026-10-14
+
+### Added
+
+- IPv6 subnet math in `subnet()` and `cidrSubnet()`: network and last address, prefix length, address count and `contains()` for IPv6 prefixes. The original compared only the low 32 bits, so `2001:db8:f53b::/48` "contained" `2001:db8:f53a::1` ([#89](https://github.com/indutny/node-ip/issues/89), [#110](https://github.com/indutny/node-ip/issues/110)).
+- `browser` field mapping `os` away, so bundlers such as webpack 5 no longer fail to resolve it ([#127](https://github.com/indutny/node-ip/issues/127), [#132](https://github.com/indutny/node-ip/issues/132)).
+
+### Documentation
+
+- How invalid input is handled and how to guard untrusted input ([#146](https://github.com/indutny/node-ip/issues/146)).
+- Using the library in a browser bundle.
+
 ## 3.0.0 — 2026-07-05
 
 ### Security
